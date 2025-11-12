@@ -1,6 +1,4 @@
-import { AnalyticsProvider } from '@rork-ai/toolkit-sdk';
-import { RorkDevWrapper } from '@rork-ai/toolkit-dev-sdk/v54';
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
@@ -10,7 +8,6 @@ import Colors from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
@@ -54,17 +51,17 @@ function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
+
       <AppProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <RootLayoutNav />
         </GestureHandlerRootView>
       </AppProvider>
-    </QueryClientProvider>
+
   );
 }
 export default function RorkRootLayoutWrapper() {
   return (
-    <AnalyticsProvider><RorkDevWrapper><RootLayout /></RorkDevWrapper></AnalyticsProvider>
+<RootLayout />
   );
 }
