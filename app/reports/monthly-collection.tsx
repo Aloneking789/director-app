@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar, Download, TrendingUp } from 'lucide-react-native';
+import { Calendar, Download, TrendingUp, IndianRupee } from '@/components/Icons';
 import Colors from '@/constants/colors';
 import BarChart from '@/components/BarChart';
 import KPICard from '@/components/KPICard';
-import { IndianRupee } from 'lucide-react-native';
+// IndianRupee imported above from Icons shim
 
 const monthlyData = [
   { label: 'Apr', value: 458000, color: '#0EA5E9' },

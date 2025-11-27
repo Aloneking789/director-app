@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar, Download } from 'lucide-react-native';
+import { Calendar, Download, IndianRupee } from '@/components/Icons';
 import Colors from '@/constants/colors';
 import DataTable, { Column } from '@/components/DataTable';
 import KPICard from '@/components/KPICard';
-import { IndianRupee } from 'lucide-react-native';
 
 const mockData = [
   { id: 1, receiptNo: 'REC001', studentName: 'Aarav Kumar', class: 'Class X-A', amount: 12500, mode: 'Cash', time: '09:15 AM' },

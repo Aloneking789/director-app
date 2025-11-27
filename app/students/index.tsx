@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, ChevronRight, Check } from 'lucide-react-native';
+import { Search, ChevronRight, Check } from '@/components/Icons';
 import { useApp } from '@/contexts/AppContext';
 import Colors, { classColors } from '@/constants/colors';
 

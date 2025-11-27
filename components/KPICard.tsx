@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { LucideIcon } from 'lucide-react-native';
+// icons are provided via the local Icons shim
 import Colors from '@/constants/colors';
 
 interface KPICardProps {
   title: string;
   value: string | number;
-  icon: LucideIcon;
+  // accept a component that renders an icon (size/color props)
+  icon: React.ComponentType<any>;
   iconColor: string;
   iconBackground: string;
   subtitle?: string;

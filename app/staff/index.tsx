@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { router, Stack } from 'expo-router';
-import { Search, ChevronRight, Check } from 'lucide-react-native';
+import { Search, ChevronRight, Check } from '@/components/Icons';
 import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 
