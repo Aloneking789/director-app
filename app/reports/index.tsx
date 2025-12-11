@@ -18,7 +18,7 @@ import {
   Download,
   BarChart3,
   PieChart,
-} from 'lucide-react-native';
+} from '@/components/Icons';
 import Colors from '@/constants/colors';
 
 export default function ReportsScreen() {

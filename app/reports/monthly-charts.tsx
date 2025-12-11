@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { Stack } from 'expo-router';
-import { TrendingUp, PieChart as PieChartIcon, BarChart3, Calendar } from 'lucide-react-native';
+import { TrendingUp, PieChart as PieChartIcon, BarChart3, Calendar } from '@/components/Icons';
 import Colors from '@/constants/colors';
 import BarChart from '@/components/BarChart';
 import DonutChart from '@/components/DonutChart';

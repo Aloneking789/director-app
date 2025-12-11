@@ -27,7 +27,7 @@ import {
   MessageSquare,
   FileText,
   BarChart3,
-} from 'lucide-react-native';
+} from '@/components/Icons';
 import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 import KPICard from '@/components/KPICard';

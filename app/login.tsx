@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { UserCircle2, Lock, LogIn } from 'lucide-react-native';
+import { UserCircle2, Lock, LogIn } from '@/components/Icons';
 import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 

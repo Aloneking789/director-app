@@ -8,7 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { Stack } from 'expo-router';
-import { Download, Filter } from 'lucide-react-native';
+import { Download, Filter } from '@/components/Icons';
 import Colors from '@/constants/colors';
 import type { ClassWiseStudents } from '@/types';
 

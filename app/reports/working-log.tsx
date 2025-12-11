@@ -16,7 +16,7 @@ import {
   Users,
   FileText,
   Trash2,
-} from 'lucide-react-native';
+} from '@/components/Icons';
 import Colors from '@/constants/colors';
 import type { WorkingLogActivity } from '@/types';
 
