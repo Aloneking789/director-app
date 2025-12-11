@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Platform,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,16 +34,44 @@ import KPICard from '@/components/KPICard';
 import BarChart from '@/components/BarChart';
 import DonutChart from '@/components/DonutChart';
 import { classFeeData } from '@/mocks/data';
+import { dashboardService } from '@/api';
 
 export default function DashboardScreen() {
-  const { user, dashboardStats, schoolInfo, selectedSession, logout } = useApp();
+  const { user, schoolInfo, selectedSession, logout } = useApp();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [showStudentAnalysis, setShowStudentAnalysis] = useState<boolean>(true);
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const onRefresh = () => {
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await dashboardService.getDashboard();
+      if (response.success && response.data) {
+        const parsed = dashboardService.parseDashboardResponse(response.data);
+        setDashboardStats(parsed);
+      } else {
+        setError(response.error || 'Failed to fetch dashboard data');
+      }
+    } catch (err) {
+      setError('Error fetching dashboard data');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    await fetchDashboardData();
+    setRefreshing(false);
   };
 
   const greeting = () => {
@@ -250,27 +279,27 @@ export default function DashboardScreen() {
               data={[
                 {
                   label: 'Present',
-                  value: dashboardStats?.attendance.studentPresent || 0,
+                  value: dashboardStats?.attendance?.studentPresent || 0,
                   color: '#22C55E',
                 },
                 {
                   label: 'Absent',
-                  value: dashboardStats?.attendance.studentAbsent || 0,
+                  value: dashboardStats?.attendance?.studentAbsent || 0,
                   color: '#EF4444',
                 },
                 {
                   label: 'Half Day',
-                  value: dashboardStats?.attendance.studentHalfDay || 0,
+                  value: dashboardStats?.attendance?.studentHalfDay || 0,
                   color: '#3B82F6',
                 },
                 {
                   label: 'Leave',
-                  value: dashboardStats?.attendance.studentLeave || 0,
+                  value: dashboardStats?.attendance?.studentLeave || 0,
                   color: '#F59E0B',
                 },
                 {
                   label: 'Not Marked',
-                  value: dashboardStats?.attendance.studentNotMarked || 0,
+                  value: dashboardStats?.attendance?.studentNotMarked || 0,
                   color: '#6B7280',
                 },
               ]}
@@ -285,19 +314,19 @@ export default function DashboardScreen() {
             <View style={[styles.commCard, { backgroundColor: Colors.light.lightBlue }]}>
               <MessageSquare size={32} color="#3B82F6" />
               <Text style={styles.commTitle}>SMS</Text>
-              <Text style={styles.commValue}>Today: {dashboardStats?.communication.smsToday || 0}</Text>
+              <Text style={styles.commValue}>Today: {dashboardStats?.communication?.smsToday || 0}</Text>
               <Text style={styles.commSubvalue}>
-                Week: {dashboardStats?.communication.smsWeek || 0}
+                Week: {dashboardStats?.communication?.smsWeek || 0}
               </Text>
             </View>
             <View style={[styles.commCard, { backgroundColor: Colors.light.lightOrange }]}>
               <MessageSquare size={32} color="#F59E0B" />
               <Text style={styles.commTitle}>Internal Message</Text>
               <Text style={styles.commValue}>
-                Today: {dashboardStats?.communication.internalToday || 0}
+                Today: {dashboardStats?.communication?.internalToday || 0}
               </Text>
               <Text style={styles.commSubvalue}>
-                Week: {dashboardStats?.communication.internalWeek || 0}
+                Week: {dashboardStats?.communication?.internalWeek || 0}
               </Text>
             </View>
           </View>
@@ -315,17 +344,17 @@ export default function DashboardScreen() {
               data={[
                 {
                   label: 'Expected',
-                  value: dashboardStats?.fees.expected || 0,
+                  value: dashboardStats?.fees?.expected || 0,
                   color: '#3B82F6',
                 },
                 {
                   label: 'Received',
-                  value: dashboardStats?.fees.received || 0,
+                  value: dashboardStats?.fees?.received || 0,
                   color: '#22C55E',
                 },
                 {
                   label: 'Balance',
-                  value: dashboardStats?.fees.balance || 0,
+                  value: dashboardStats?.fees?.balance || 0,
                   color: '#EF4444',
                 },
               ]}
@@ -338,7 +367,7 @@ export default function DashboardScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Today's Collection</Text>
             <Text style={styles.collectionAmount}>
-              ₹{dashboardStats?.fees.todayCollection.toLocaleString() || 0}
+              ₹{dashboardStats?.fees?.todayCollection?.toLocaleString() || 0}
             </Text>
           </View>
         </View>
@@ -351,7 +380,7 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.financialGrid}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.financialCard, { backgroundColor: Colors.light.lightBlue }]}
               onPress={() => router.push('/reports/daily-collection')}
             >
@@ -359,7 +388,7 @@ export default function DashboardScreen() {
               <Text style={styles.financialTitle}>Daily Report</Text>
               <Text style={styles.financialValue}>₹45,200</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.financialCard, { backgroundColor: Colors.light.lightGreen }]}
               onPress={() => router.push('/reports/monthly-collection')}
             >
@@ -367,13 +396,13 @@ export default function DashboardScreen() {
               <Text style={styles.financialTitle}>Monthly</Text>
               <Text style={styles.financialValue}>₹5.8L</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.financialCard, { backgroundColor: Colors.light.lightOrange }]}
               onPress={() => router.push('/reports/deleted-receipts')}
             >
               <FileText size={28} color="#F59E0B" />
               <Text style={styles.financialTitle}>Deleted</Text>
-              <Text style={styles.financialValue}>{dashboardStats?.fees.deletedReceipts || 0}</Text>
+              <Text style={styles.financialValue}>{dashboardStats?.fees?.deletedReceipts || 0}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -384,17 +413,17 @@ export default function DashboardScreen() {
             <View style={[styles.assignCard, { backgroundColor: Colors.light.lightPink }]}>
               <BookOpen size={32} color="#EC4899" />
               <Text style={styles.assignTitle}>Home Work</Text>
-              <Text style={styles.assignValue}>{dashboardStats?.assignments.homework || 0}</Text>
+              <Text style={styles.assignValue}>{dashboardStats?.assignments?.homework || 0}</Text>
             </View>
             <View style={[styles.assignCard, { backgroundColor: Colors.light.lightBlue }]}>
               <BookOpen size={32} color="#3B82F6" />
               <Text style={styles.assignTitle}>Class Work</Text>
-              <Text style={styles.assignValue}>{dashboardStats?.assignments.classwork || 0}</Text>
+              <Text style={styles.assignValue}>{dashboardStats?.assignments?.classwork || 0}</Text>
             </View>
             <View style={[styles.assignCard, { backgroundColor: Colors.light.lightYellow }]}>
               <BookOpen size={32} color="#F59E0B" />
               <Text style={styles.assignTitle}>Activity</Text>
-              <Text style={styles.assignValue}>{dashboardStats?.assignments.activities || 0}</Text>
+              <Text style={styles.assignValue}>{dashboardStats?.assignments?.activities || 0}</Text>
             </View>
           </View>
         </View>
@@ -405,11 +434,11 @@ export default function DashboardScreen() {
             <Text style={styles.birthdayTitle}>Today's Birthday</Text>
             <View style={styles.birthdayGrid}>
               <View style={styles.birthdayCard}>
-                <Text style={styles.birthdayCount}>{dashboardStats?.birthday.studentsToday || 0}</Text>
+                <Text style={styles.birthdayCount}>{dashboardStats?.birthday?.studentsToday || 0}</Text>
                 <Text style={styles.birthdayLabel}>Student</Text>
               </View>
               <View style={styles.birthdayCard}>
-                <Text style={styles.birthdayCount}>{dashboardStats?.birthday.staffToday || 0}</Text>
+                <Text style={styles.birthdayCount}>{dashboardStats?.birthday?.staffToday || 0}</Text>
                 <Text style={styles.birthdayLabel}>Staff</Text>
               </View>
             </View>

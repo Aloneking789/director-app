@@ -1,46 +1,75 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { router, Stack } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, ChevronRight, Check } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
+import { staffService } from '@/api';
+import type { StaffListItem } from '@/api';
 
 export default function StaffScreen() {
-  const { staff, searchStaff } = useApp();
+  const { user } = useApp();
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [staff, setStaff] = useState<StaffListItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const displayStaff = searchQuery ? searchStaff(searchQuery) : staff.slice(0, 50);
+  useEffect(() => {
+    fetchStaff();
+  }, []);
+
+  const fetchStaff = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await staffService.getStaffList();
+      if (response.success && response.data) {
+        setStaff(response.data);
+      } else {
+        setError(response.error || 'Failed to fetch staff');
+      }
+    } catch (err) {
+      setError('Error fetching staff');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const displayStaff = searchQuery ? staffService.searchStaff(staff, searchQuery) : staff.slice(0, 50);
 
   const avatarColors = ['#FF9F43', '#A78BFA', '#EF4444', '#22C55E', '#3B82F6'];
-  
+
   const getInitials = (name: string) => {
     const parts = name.split(' ');
     return parts.map(p => p[0]).join('').substring(0, 2).toUpperCase();
   };
 
-  const renderStaff = ({ item, index }: { item: typeof staff[0]; index: number }) => {
+  const renderStaff = ({ item, index }: { item: StaffListItem; index: number }) => {
     const color = avatarColors[index % avatarColors.length];
+    const staffName = `${item.FirstName} ${item.MiddleName || ''} ${item.LastName || ''}`.trim();
 
     return (
       <TouchableOpacity
         style={styles.staffCard}
-        onPress={() => router.push(`/staff/${item.id}`)}
+        onPress={() => router.push(`/staff/${item.Id}`)}
       >
         <View style={[styles.avatar, { backgroundColor: color }]}>
-          <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
+          <Text style={styles.avatarText}>{getInitials(staffName)}</Text>
         </View>
         <View style={styles.staffInfo}>
           <View style={styles.staffHeader}>
-            <Text style={styles.staffName}>{item.name}</Text>
-            {item.isActive && <Check size={16} color={Colors.light.success} />}
+            <Text style={styles.staffName}>{staffName}</Text>
+            <Check size={16} color={Colors.light.success} />
           </View>
-          <Text style={styles.staffDetails}>📞 {item.phone}</Text>
+          <Text style={styles.staffDetails}>📞 {item.Id}</Text>
           <View style={styles.badges}>
             <View style={[styles.badge, { backgroundColor: Colors.light.lightBlue }]}>
-              <Text style={styles.badgeText}>{item.staffId}</Text>
+              <Text style={styles.badgeText}>{item.EmployeeId}</Text>
             </View>
             <View style={[styles.badge, { backgroundColor: Colors.light.lightOrange }]}>
-              <Text style={styles.badgeText}>{item.designation}</Text>
+              <Text style={styles.badgeText}>{item.JobTitle}</Text>
             </View>
           </View>
         </View>
@@ -49,8 +78,41 @@ export default function StaffScreen() {
     );
   };
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <Text style={{ marginTop: 12, color: Colors.light.gray600 }}>Loading staff...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }]}>
+          <Text style={{ color: Colors.light.error, fontSize: 16, textAlign: 'center' }}>{error}</Text>
+          <TouchableOpacity
+            style={{
+              marginTop: 20,
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              backgroundColor: Colors.light.primary,
+              borderRadius: 8,
+            }}
+            onPress={fetchStaff}
+          >
+            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: 'Staff Directory' }} />
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
@@ -67,10 +129,10 @@ export default function StaffScreen() {
       <FlatList
         data={displayStaff}
         renderItem={renderStaff}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.Id.toString()}
         contentContainerStyle={styles.listContainer}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,48 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, ChevronRight, Check } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
 import Colors, { classColors } from '@/constants/colors';
+import { studentService } from '@/api';
+import type { StudentListItem } from '@/api';
 
 export default function StudentsScreen() {
-  const { students, searchStudents } = useApp();
+  const { user } = useApp();
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [students, setStudents] = useState<StudentListItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const displayStudents = searchQuery ? searchStudents(searchQuery) : students.slice(0, 50);
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await studentService.getStudentsList();
+      if (response.success && response.data) {
+        setStudents(response.data);
+      } else {
+        setError(response.error || 'Failed to fetch students');
+      }
+    } catch (err) {
+      setError('Error fetching students');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const displayStudents = searchQuery
+    ? studentService.searchStudents(students, searchQuery)
+    : students.slice(0, 50);
 
   const getInitials = (name: string) => {
     const parts = name.split(' ');
@@ -31,44 +61,77 @@ export default function StudentsScreen() {
     return classColors[index % classColors.length];
   };
 
-  const renderStudent = ({ item }: { item: typeof students[0] }) => {
-    const color = getColorForClass(item.class);
+  const renderStudent = ({ item }: { item: StudentListItem }) => {
+    const color = getColorForClass(item.cls);
 
     return (
       <TouchableOpacity
         style={styles.studentCard}
-        onPress={() => router.push(`/students/${item.id}`)}
+        onPress={() => router.push(`/students/${item.Id}`)}
       >
         <View style={[styles.avatar, { backgroundColor: color + '20' }]}>
-          <Text style={[styles.avatarText, { color }]}>{getInitials(item.name)}</Text>
+          <Text style={[styles.avatarText, { color }]}>{getInitials(`${item.FirstName} ${item.LastName || ''}`)}</Text>
         </View>
         <View style={styles.studentInfo}>
           <View style={styles.studentHeader}>
-            <Text style={styles.studentName}>{item.name}</Text>
+            <Text style={styles.studentName}>{`${item.FirstName} ${item.LastName || ''}`}</Text>
             <View style={[styles.enrollmentBadge, { backgroundColor: Colors.light.lightBlue }]}>
-              <Text style={styles.enrollmentText}>{item.enrollmentNo}</Text>
+              <Text style={styles.enrollmentText}>{item.AdmissionId}</Text>
             </View>
             {item.status === 'active' && (
               <Check size={16} color={Colors.light.success} />
             )}
           </View>
           <Text style={styles.studentDetails}>
-            {item.fatherName}
+            {item.father}
           </Text>
           <Text style={styles.studentDetails}>
-            {item.motherName}
+            {item.mother}
           </Text>
           <View style={styles.statusRow}>
             <View style={[styles.badge, { backgroundColor: color }]}>
-              <Text style={styles.badgeText}>{item.class}</Text>
+              <Text style={styles.badgeText}>{item.cls}</Text>
             </View>
-            <Text style={styles.genderText}>{item.gender.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.genderText}>{item.Gender?.charAt(0).toUpperCase() || 'N/A'}</Text>
           </View>
         </View>
         <ChevronRight size={20} color={Colors.light.gray400} />
       </TouchableOpacity>
     );
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <Text style={{ marginTop: 12, color: Colors.light.gray600 }}>Loading students...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }]}>
+          <Text style={{ color: Colors.light.error, fontSize: 16, textAlign: 'center' }}>{error}</Text>
+          <TouchableOpacity
+            style={{
+              marginTop: 20,
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              backgroundColor: Colors.light.primary,
+              borderRadius: 8,
+            }}
+            onPress={fetchStudents}
+          >
+            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -94,7 +157,7 @@ export default function StudentsScreen() {
       <FlatList
         data={displayStudents}
         renderItem={renderStudent}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.Id.toString()}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />

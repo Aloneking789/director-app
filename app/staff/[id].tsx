@@ -1,33 +1,79 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
-import { useApp } from '@/contexts/AppContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
+import { staffService } from '@/api';
+import type { StaffListItem } from '@/api';
 
 export default function StaffDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getStaffById } = useApp();
-  const staff = getStaffById(id!);
+  const [staff, setStaff] = useState<StaffListItem | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!staff) {
-    return <View style={styles.container}><Text>Staff not found</Text></View>;
+  useEffect(() => {
+    if (id) fetchStaffDetail();
+  }, [id]);
+
+  const fetchStaffDetail = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await staffService.getStaffList();
+      if (response.success && response.data) {
+        const staffMember = response.data.find(s => s.Id.toString() === id || s.EmployeeId === id);
+        if (staffMember) {
+          setStaff(staffMember);
+        } else {
+          setError('Staff member not found');
+        }
+      } else {
+        setError(response.error || 'Failed to fetch staff details');
+      }
+    } catch (err) {
+      setError('Error fetching staff details');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !staff) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={{ padding: 16, color: Colors.light.error }}>{error || 'Staff not found'}</Text>
+      </SafeAreaView>
+    );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: 'Staff Directory' }} />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <View style={[styles.avatar, { backgroundColor: Colors.light.primary }]}>
-            <Text style={styles.avatarText}>{staff.name.split(' ').map(n => n[0]).join('')}</Text>
+            <Text style={styles.avatarText}>
+              {`${staff.FirstName?.charAt(0) || ''}${staff.LastName?.charAt(0) || ''}`}
+            </Text>
           </View>
-          <Text style={styles.name}>{staff.name}</Text>
+          <Text style={styles.name}>{`${staff.FirstName} ${staff.MiddleName || ''} ${staff.LastName || ''}`}</Text>
           <View style={styles.badges}>
             <View style={[styles.badge, { backgroundColor: Colors.light.lightBlue }]}>
-              <Text style={styles.badgeText}>{staff.staffId}</Text>
+              <Text style={styles.badgeText}>{staff.EmployeeId}</Text>
             </View>
             <View style={[styles.badge, { backgroundColor: Colors.light.lightOrange }]}>
-              <Text style={styles.badgeText}>{staff.designation}</Text>
+              <Text style={styles.badgeText}>{staff.JobTitle}</Text>
             </View>
           </View>
         </View>
@@ -35,16 +81,15 @@ export default function StaffDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Info</Text>
           <View style={styles.card}>
-            <InfoRow label="Department" value={staff.department} />
-            <InfoRow label="Date of Joining" value={staff.joiningDate} />
-            <InfoRow label="Date of Birth" value={staff.dob} />
-            <InfoRow label="Religion" value={staff.religion} />
-            <InfoRow label="Contact Number" value={staff.phone} />
-            <InfoRow label="Email" value={staff.email} />
+            <InfoRow label="Department" value={staff.EmployeeCategoryName || 'N/A'} />
+            <InfoRow label="Position" value={staff.EmployeePositionName || 'N/A'} />
+            <InfoRow label="Date of Joining" value={staff.JoiningDate || 'N/A'} />
+            <InfoRow label="Gender" value={staff.Gender || 'N/A'} />
+            <InfoRow label="Qualification" value={staff.Qualification || 'N/A'} />
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

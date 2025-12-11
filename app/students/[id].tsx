@@ -1,21 +1,54 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '@/contexts/AppContext';
-import { studentFeeDetails } from '@/mocks/data';
 import Colors, { classColors } from '@/constants/colors';
+import { studentService } from '@/api';
+import type { StudentDetail } from '@/api';
 
 export default function StudentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getStudentById } = useApp();
-  const student = getStudentById(id!);
-  const feeDetails = id ? studentFeeDetails[id] : null;
+  const [student, setStudent] = useState<StudentDetail | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!student) {
+  useEffect(() => {
+    if (id) fetchStudentDetail();
+  }, [id]);
+
+  const fetchStudentDetail = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await studentService.getStudentDetail(id!);
+      if (response.success && response.data && response.data.length > 0) {
+        setStudent(response.data[0]);
+      } else {
+        setError(response.error || 'Student not found');
+      }
+    } catch (err) {
+      setError('Error fetching student details');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text>Student not found</Text>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !student) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={{ padding: 16, color: Colors.light.error }}>{error || 'Student not found'}</Text>
       </SafeAreaView>
     );
   }
@@ -26,7 +59,7 @@ export default function StudentDetailScreen() {
     return classColors[index % classColors.length];
   };
 
-  const color = getColorForClass(student.class);
+  const color = getColorForClass(student.cls);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -40,17 +73,17 @@ export default function StudentDetailScreen() {
         <View style={styles.header}>
           <View style={[styles.avatar, { backgroundColor: color }]}>
             <Text style={styles.avatarText}>
-              {student.name.split(' ').map(n => n[0]).join('')}
+              {`${student.FirstName?.charAt(0) || ''}${student.LastName?.charAt(0) || ''}`}
             </Text>
           </View>
-          <Text style={styles.name}>{student.name}</Text>
+          <Text style={styles.name}>{`${student.FirstName} ${student.LastName || ''}`}</Text>
           <View style={styles.badges}>
             <View style={[styles.classBadge, { backgroundColor: color }]}>
-              <Text style={styles.badgeText}>{student.class} {student.section}</Text>
+              <Text style={styles.badgeText}>{student.cls} {student.section}</Text>
             </View>
             <View style={[styles.statusBadge, { backgroundColor: Colors.light.lightGreen }]}>
               <Text style={[styles.badgeText, { color: Colors.light.success }]}>
-                {student.status.toUpperCase()}
+                {student.status?.toUpperCase() || 'N/A'}
               </Text>
             </View>
           </View>
@@ -59,46 +92,32 @@ export default function StudentDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
           <View style={styles.card}>
-            <InfoRow label="Enrollment No" value={student.enrollmentNo} />
-            <InfoRow label="Date of Admission" value={student.admissionDate} />
-            <InfoRow label="Date of Birth" value={student.dob} />
-            <InfoRow label="Religion" value={student.religion} />
-            <InfoRow label="Gender" value={student.gender} />
-            <InfoRow label="Aadhar Card" value={student.aadharCard} />
-            <InfoRow label="House" value={student.house} />
+            <InfoRow label="Enrollment No" value={student.AdmissionId} />
+            <InfoRow label="Date of Birth" value={student.DOB || 'N/A'} />
+            <InfoRow label="Religion" value={student.Religion || 'N/A'} />
+            <InfoRow label="Gender" value={student.Gender || 'N/A'} />
+            <InfoRow label="Blood Group" value={student.BloodGroup || 'N/A'} />
+            <InfoRow label="Nationality" value={student.Nationality || 'N/A'} />
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Father Details</Text>
           <View style={styles.card}>
-            <InfoRow label="Name" value={student.fatherName} />
-            <InfoRow label="Phone" value={student.fatherPhone} />
+            <InfoRow label="Name" value={student.father} />
+            <InfoRow label="Phone" value={student.fcontact || 'N/A'} />
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Mother Details</Text>
           <View style={styles.card}>
-            <InfoRow label="Name" value={student.motherName} />
-            <InfoRow label="Phone" value={student.motherPhone} />
+            <InfoRow label="Name" value={student.mother} />
+            <InfoRow label="Phone" value={student.mcontact || 'N/A'} />
           </View>
         </View>
 
-        {feeDetails && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Fee Details</Text>
-            <View style={styles.card}>
-              <InfoRow label="Total Due" value={`₹${feeDetails.totalDue.toLocaleString()}`} />
-              <InfoRow label="Total Paid" value={`₹${feeDetails.totalPaid.toLocaleString()}`} />
-              <InfoRow 
-                label="Balance" 
-                value={`₹${feeDetails.balance.toLocaleString()}`}
-                valueStyle={{ color: Colors.light.error, fontWeight: 'bold' as const }}
-              />
-            </View>
-          </View>
-        )}
+
       </ScrollView>
     </SafeAreaView>
   );
