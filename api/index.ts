@@ -11,6 +11,7 @@ export * from './types';
 export { dashboardService } from './services/dashboard';
 export { studentService } from './services/students';
 export { staffService } from './services/staff';
+export { feeService } from './services/fees';
 
 // Initialization logging
 console.log(`

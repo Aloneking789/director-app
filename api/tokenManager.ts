@@ -222,7 +222,7 @@ export const tokenManager = new TokenManager();
  *      "user": {
  *        "id": "user123",
  *        "role": "director",
- *        "sessionId": "1023"
+ *        "sessionId": "1026"
  *      }
  *    }
  * 3. Store token using tokenManager.storeToken(...)

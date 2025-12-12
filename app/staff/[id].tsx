@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, ActivityIndicator, Image } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
@@ -9,6 +9,7 @@ import type { StaffListItem } from '@/api';
 export default function StaffDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [staff, setStaff] = useState<StaffListItem | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +26,12 @@ export default function StaffDetailScreen() {
         const staffMember = response.data.find(s => s.Id.toString() === id || s.EmployeeId === id);
         if (staffMember) {
           setStaff(staffMember);
+          // Fetch photo
+          const photoResponse = await staffService.getStaffPhoto(staffMember.EmployeeId);
+          if (photoResponse.success && photoResponse.data) {
+            const url = staffService.getStaffPhotoUrl(photoResponse.data);
+            setPhotoUrl(url);
+          }
         } else {
           setError('Staff member not found');
         }
@@ -62,11 +69,18 @@ export default function StaffDetailScreen() {
       <Stack.Screen options={{ headerShown: true, title: 'Staff Directory' }} />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
-          <View style={[styles.avatar, { backgroundColor: Colors.light.primary }]}>
-            <Text style={styles.avatarText}>
-              {`${staff.FirstName?.charAt(0) || ''}${staff.LastName?.charAt(0) || ''}`}
-            </Text>
-          </View>
+          {photoUrl ? (
+            <Image
+              source={{ uri: photoUrl }}
+              style={styles.photo}
+            />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: Colors.light.primary }]}>
+              <Text style={styles.avatarText}>
+                {`${staff.FirstName?.charAt(0) || ''}${staff.LastName?.charAt(0) || ''}`}
+              </Text>
+            </View>
+          )}
           <Text style={styles.name}>{`${staff.FirstName} ${staff.MiddleName || ''} ${staff.LastName || ''}`}</Text>
           <View style={styles.badges}>
             <View style={[styles.badge, { backgroundColor: Colors.light.lightBlue }]}>
@@ -112,6 +126,7 @@ const styles = StyleSheet.create({
     ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4 }, android: { elevation: 3 } }),
   },
   avatar: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  photo: { width: 100, height: 100, borderRadius: 50, marginBottom: 12 },
   avatarText: { fontSize: 28, fontWeight: 'bold' as const, color: '#fff' },
   name: { fontSize: 22, fontWeight: 'bold' as const, color: Colors.light.text, marginBottom: 12 },
   badges: { flexDirection: 'row', gap: 8 },

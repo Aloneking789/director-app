@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, ChevronRight, Check } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 import { useApp } from '@/contexts/AppContext';
 import Colors from '@/constants/colors';
 import { staffService } from '@/api';
@@ -61,7 +61,7 @@ export default function StaffScreen() {
         <View style={styles.staffInfo}>
           <View style={styles.staffHeader}>
             <Text style={styles.staffName}>{staffName}</Text>
-            <Check size={16} color={Colors.light.success} />
+            <Feather name="check" size={16} color={Colors.light.success} />
           </View>
           <Text style={styles.staffDetails}>📞 {item.Id}</Text>
           <View style={styles.badges}>
@@ -73,7 +73,7 @@ export default function StaffScreen() {
             </View>
           </View>
         </View>
-        <ChevronRight size={20} color={Colors.light.gray400} />
+        <Feather name="chevron-right" size={20} color={Colors.light.gray400} />
       </TouchableOpacity>
     );
   };
@@ -116,7 +116,7 @@ export default function StaffScreen() {
       <Stack.Screen options={{ headerShown: true, title: 'Staff Directory' }} />
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-          <Search size={20} color={Colors.light.gray400} />
+          <Feather name="search" size={20} color={Colors.light.gray400} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by Employee Name or Mobile No"

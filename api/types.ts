@@ -133,6 +133,54 @@ export interface PhotoResponse {
 export type PhotoListResponse = PhotoResponse[];
 
 /**
+ * Fee Collection Response
+ */
+export interface FeeCollectionItem {
+  sr_no: number;
+  Select_Amount: string;
+  more_fee: string | null;
+  Paid: string;
+  school_fee: string;
+  bus_fee: string | null;
+  discount: string;
+  transfer_paid: string;
+  Cash: string;
+  Cheque: string;
+  pos: string;
+  RecieptNumber: string;
+  Receipt_no_ss: string | null;
+  type_of_receipt: string | null;
+  SessionId: string;
+  StudentId: string;
+  Name: string;
+  Class: string;
+  Section: string;
+  PaymentMode: string;
+  TransactionDate: string;
+  CreatedAt: string;
+  time: string;
+  bank_name: string | null;
+  month: string;
+  year: string;
+}
+
+export type FeeCollectionResponse = FeeCollectionItem[];
+
+/**
+ * Fee Payment Details Response
+ */
+export interface FeePaymentDetail {
+  SessionId: string | null;
+  Event_date: string | null;
+  Event_tile: string;
+  Event_description: string; // URL for webview
+  Is_Holyday: string | null;
+  due_link: string; // URL for webview
+}
+
+export type FeePaymentResponse = FeePaymentDetail[];
+
+/**
  * Generic error response
  */
 export interface ApiErrorResponse {

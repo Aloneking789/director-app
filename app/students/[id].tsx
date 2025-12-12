@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, ActivityIndicator, Image, TouchableOpacity, Modal } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useApp } from '@/contexts/AppContext';
 import Colors, { classColors } from '@/constants/colors';
-import { studentService } from '@/api';
-import type { StudentDetail } from '@/api';
+import { studentService, feeService } from '@/api';
+import type { StudentDetail, FeePaymentResponse } from '@/api';
 
 export default function StudentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [student, setStudent] = useState<StudentDetail | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [feeDetails, setFeeDetails] = useState<FeePaymentResponse>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedWebViewUrl, setSelectedWebViewUrl] = useState<string | null>(null);
+  const [webViewModalVisible, setWebViewModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
     if (id) fetchStudentDetail();
@@ -23,7 +29,19 @@ export default function StudentDetailScreen() {
       setError(null);
       const response = await studentService.getStudentDetail(id!);
       if (response.success && response.data && response.data.length > 0) {
-        setStudent(response.data[0]);
+        const studentData = response.data[0];
+        setStudent(studentData);
+        // Fetch photo
+        const photoResponse = await studentService.getStudentPhoto(studentData.Id.toString());
+        if (photoResponse.success && photoResponse.data) {
+          const url = studentService.getStudentPhotoUrl(photoResponse.data);
+          setPhotoUrl(url);
+        }
+        // Fetch fee payment details
+        const feeResponse = await feeService.getStudentFeePayment(studentData.Id.toString());
+        if (feeResponse.success && feeResponse.data) {
+          setFeeDetails(feeResponse.data);
+        }
       } else {
         setError(response.error || 'Student not found');
       }
@@ -33,6 +51,16 @@ export default function StudentDetailScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOpenWebView = (url: string) => {
+    setSelectedWebViewUrl(url);
+    setWebViewModalVisible(true);
+  };
+
+  const handleCloseWebView = () => {
+    setWebViewModalVisible(false);
+    setSelectedWebViewUrl(null);
   };
 
   if (loading) {
@@ -71,11 +99,18 @@ export default function StudentDetailScreen() {
       />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
-          <View style={[styles.avatar, { backgroundColor: color }]}>
-            <Text style={styles.avatarText}>
-              {`${student.FirstName?.charAt(0) || ''}${student.LastName?.charAt(0) || ''}`}
-            </Text>
-          </View>
+          {photoUrl ? (
+            <Image
+              source={{ uri: photoUrl }}
+              style={styles.photo}
+            />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: color }]}>
+              <Text style={styles.avatarText}>
+                {`${student.FirstName?.charAt(0) || ''}${student.LastName?.charAt(0) || ''}`}
+              </Text>
+            </View>
+          )}
           <Text style={styles.name}>{`${student.FirstName} ${student.LastName || ''}`}</Text>
           <View style={styles.badges}>
             <View style={[styles.classBadge, { backgroundColor: color }]}>
@@ -117,8 +152,63 @@ export default function StudentDetailScreen() {
           </View>
         </View>
 
+        {/* Fee Payment Details */}
+        {feeDetails.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Fee Payment Details</Text>
+            {feeDetails.map((fee, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.feeCard}
+                onPress={() => fee.Event_description && handleOpenWebView(fee.Event_description)}
+              >
+                <View style={styles.feeContent}>
+                  <Text style={styles.feeTitle}>{fee.Event_tile}</Text>
+                  {fee.Event_description && (
+                    <Text style={styles.feeLink}>View Payment Details →</Text>
+                  )}
+                </View>
+                {fee.Event_description && (
+                  <Feather name="external-link" size={20} color={Colors.light.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
       </ScrollView>
+
+      {/* WebView Modal for Fee Details */}
+      <Modal
+        visible={webViewModalVisible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={handleCloseWebView}
+      >
+        <View style={styles.webViewContainer}>
+          <View style={styles.webViewHeader}>
+            <Text style={styles.webViewTitle}>Fee Payment Details</Text>
+            <TouchableOpacity
+              style={styles.webViewCloseButton}
+              onPress={handleCloseWebView}
+            >
+              <Feather name="x" size={24} color={Colors.light.text} />
+            </TouchableOpacity>
+          </View>
+          {selectedWebViewUrl && (
+            <WebView
+              source={{ uri: selectedWebViewUrl }}
+              style={styles.webView}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={Colors.light.primary} />
+                </View>
+              )}
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -163,6 +253,12 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 12,
+  },
+  photo: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     marginBottom: 12,
   },
   avatarText: {
@@ -236,4 +332,70 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
     color: Colors.light.text,
   },
-});
+  feeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.light.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.light.primary,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  feeContent: {
+    flex: 1,
+  },
+  feeTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: Colors.light.text,
+    marginBottom: 4,
+  },
+  feeLink: {
+    fontSize: 14,
+    color: Colors.light.primary,
+    fontWeight: '500' as const,
+  },
+  webViewContainer: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+  },
+  webViewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: Colors.light.card,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.gray100,
+    paddingTop: Platform.OS === 'android' ? 16 : 0,
+  },
+  webViewTitle: {
+    fontSize: 18,
+    fontWeight: 'bold' as const,
+    color: Colors.light.text,
+  },
+  webViewCloseButton: {
+    padding: 8,
+  },
+  webView: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },});

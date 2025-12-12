@@ -19,8 +19,8 @@ class StudentService {
   async getStudentsList(): Promise<ApiResponse<StudentListResponse>> {
     try {
       console.log('[STUDENTS] Fetching students list...');
-      // C# backend: use 'sessionid' instead of 'session'
-      const endpoint = `${API_ENDPOINTS.STUDENTS_LIST}?sessionid=${SESSION_CONFIG.DEFAULT_SESSION}`;
+      // API requires both session and token parameters
+      const endpoint = `${API_ENDPOINTS.STUDENTS_LIST}?session=${SESSION_CONFIG.DEFAULT_SESSION}`;
       console.log('[STUDENTS] Endpoint:', endpoint);
       const response = await httpClient.get<StudentListResponse>(endpoint);
       console.log('[STUDENTS] Response status:', response.success);
@@ -86,16 +86,31 @@ class StudentService {
         };
       }
 
-      const response = await httpClient.get<PhotoListResponse>(
-        `${API_ENDPOINTS.STUDENT_PHOTO}?studentid=${studentId}`
-      );
+      console.log('[STUDENT-PHOTO] Fetching photo for student:', studentId);
+      const endpoint = `${API_ENDPOINTS.STUDENT_PHOTO}?studentid=${studentId}`;
+      console.log('[STUDENT-PHOTO] Endpoint:', endpoint);
+      const response = await httpClient.get<PhotoListResponse>(endpoint, undefined, {
+        tokenParamName: 'tokan', // API uses "tokan" instead of "token" (typo in original API)
+      });
+      console.log('[STUDENT-PHOTO] Response:', response);
       return response;
     } catch (error) {
+      console.error('[STUDENT-PHOTO] Exception:', error);
       return {
         success: false,
         error: 'Failed to fetch student photo',
       };
     }
+  }
+
+  /**
+   * Get student photo URL from the API response
+   */
+  getStudentPhotoUrl(photoResponse: PhotoListResponse): string | null {
+    if (photoResponse && photoResponse.length > 0 && photoResponse[0].SessionId) {
+      return photoResponse[0].SessionId;
+    }
+    return null;
   }
 
   /**

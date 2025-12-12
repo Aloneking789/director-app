@@ -143,16 +143,32 @@ class StaffService {
         };
       }
 
-      const response = await httpClient.get<PhotoListResponse>(
-        `${API_ENDPOINTS.STAFF_PHOTO}?studentid=${employeeId}`
-      );
+      console.log('[STAFF-PHOTO] Fetching photo for employee:', employeeId);
+      // Note: The API endpoint uses "studentid" parameter name and "tokan" (with typo)
+      const endpoint = `${API_ENDPOINTS.STAFF_PHOTO}?studentid=${employeeId}`;
+      console.log('[STAFF-PHOTO] Endpoint:', endpoint);
+      const response = await httpClient.get<PhotoListResponse>(endpoint, undefined, {
+        tokenParamName: 'tokan', // API uses "tokan" instead of "token" (typo in original API)
+      });
+      console.log('[STAFF-PHOTO] Response:', response);
       return response;
     } catch (error) {
+      console.error('[STAFF-PHOTO] Exception:', error);
       return {
         success: false,
         error: 'Failed to fetch staff photo',
       };
     }
+  }
+
+  /**
+   * Get staff photo URL from the API response
+   */
+  getStaffPhotoUrl(photoResponse: PhotoListResponse): string | null {
+    if (photoResponse && photoResponse.length > 0 && photoResponse[0].SessionId) {
+      return photoResponse[0].SessionId;
+    }
+    return null;
   }
 
   /**

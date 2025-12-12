@@ -17,6 +17,7 @@ export interface ApiRequestConfig {
   headers?: Record<string, string>;
   body?: any;
   timeout?: number;
+  tokenParamName?: string; // Custom token parameter name (e.g., 'tokan' for some APIs)
 }
 
 class HttpClient {
@@ -65,9 +66,25 @@ class HttpClient {
 
       if (!response.ok) {
         console.error(`[API-ERROR] HTTP ${response.status}`);
+        // Try to get error message from response
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType?.includes('application/json')) {
+            const errorData = await response.json();
+            console.error(`[API-ERROR-DATA]`, JSON.stringify(errorData, null, 2));
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } else {
+            const errorText = await response.text();
+            console.error(`[API-ERROR-TEXT]`, errorText);
+            errorMessage = errorText || errorMessage;
+          }
+        } catch (e) {
+          console.error(`[API-ERROR-PARSE]`, e);
+        }
         return {
           success: false,
-          error: `HTTP ${response.status}: ${response.statusText}`,
+          error: errorMessage,
           status: response.status,
         };
       }
@@ -145,9 +162,13 @@ class HttpClient {
     console.log(`  Endpoint: ${endpoint}`);
     console.log(`  Token: ${token || 'MISSING'}`);
 
+    // Use custom token parameter name if provided, otherwise default to 'token'
+    const tokenParamName = config.tokenParamName || 'token';
+    console.log(`  Token Param Name: ${tokenParamName}`);
+
     // Extract query parameters from config or create new URLSearchParams
     const urlParams = new URLSearchParams();
-    urlParams.append('token', token);
+    urlParams.append(tokenParamName, token);
 
     // Add token to URL
     const hasExistingParams = endpoint.includes('?');
@@ -163,7 +184,7 @@ class HttpClient {
    */
   private buildHeaders(additionalHeaders?: Record<string, string>): Record<string, string> {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      // Only set Content-Type for POST/PUT requests
       ...additionalHeaders,
     };
     console.log(`[HEADERS-BUILD]`, JSON.stringify(headers, null, 2));

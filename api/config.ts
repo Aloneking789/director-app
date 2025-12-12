@@ -21,6 +21,10 @@ export const API_ENDPOINTS = {
   STAFF_PRESENT_LIST: '/Director.asmx/Staff_list_p',
   STAFF_ABSENT_LIST: '/Director.asmx/Staff_list_a',
   STAFF_PHOTO: '/Director.asmx/get_Employee_photo',
+  
+  // Fees
+  FEE_COLLECTION_TODAY: '/Director.asmx/All_Session_Fee_Collection_dt_today',
+  FEE_PAYMENT_DETAILS: '/Director.asmx/get_Fee_payment',
 } as const;
 
 /**
@@ -44,7 +48,7 @@ export const TOKEN_CONVENTION = {
  */
 export function generatePlaceholderToken(): string {
   // For C# backend, use simple format: just session ID
-  const token = '1023';
+  const token = '1026';
   console.log(`[TOKEN-GENERATE] Token: ${token}`);
   return token;
 }
@@ -64,6 +68,6 @@ export function getStoredToken(): string {
  * Session configuration
  */
 export const SESSION_CONFIG = {
-  DEFAULT_SESSION: '1023',
-  SESSION_ID: '1023', // Placeholder session ID from API responses
+  DEFAULT_SESSION: '1026',
+  SESSION_ID: '1026', // Placeholder session ID from API responses
 } as const;
